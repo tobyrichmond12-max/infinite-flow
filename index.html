@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#12141d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Infinite Flow">
+<title>Infinite Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12141d;
+    --panel:#1a1e2b;
+    --line:#262c3d;
+    --text:#e8eaf2;
+    --muted:#8b93a7;
+    --accent:#ffc24b;
+    --good:#5ee08a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Outfit',system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;
+    min-height:100%;
+    padding:calc(14px + env(safe-area-inset-top, 0px)) 12px calc(28px + env(safe-area-inset-bottom, 0px));
+    overscroll-behavior:none;
+  }
+  header{
+    width:100%;max-width:560px;
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:10px;min-height:34px;
+  }
+  .hleft{display:flex;align-items:center;gap:2px}
+  .hright{display:flex;align-items:center;gap:10px}
+  h1{font-weight:800;font-size:1.35rem;letter-spacing:.02em;cursor:pointer}
+  h1 .inf{color:var(--accent);font-weight:800}
+  .streak{
+    font-family:'JetBrains Mono',monospace;font-size:.74rem;color:var(--muted);
+    text-align:right;line-height:1.5;
+  }
+  .streak b{color:var(--text)}
+  .streak .star{color:var(--accent)}
+  .iconBtn{
+    background:none;border:none;color:var(--muted);
+    font-size:1.15rem;cursor:pointer;padding:4px 6px;line-height:1;
+  }
+  .iconBtn:hover{color:var(--text)}
+  .iconBtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+  #backBtn{font-size:1.5rem;padding:0 8px 3px 0;display:none}
+
+  /* ---- pack menu ---- */
+  .menu{
+    width:100%;max-width:560px;
+    display:flex;flex-direction:column;gap:10px;
+    margin-top:2vh;
+  }
+  .tagline{
+    font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--muted);
+    text-align:center;margin-bottom:10px;
+  }
+  .tagline b{color:var(--accent);font-weight:700}
+  .packCard{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:14px 16px;text-align:left;cursor:pointer;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    font-family:'Outfit',sans-serif;color:var(--text);
+    transition:border-color .12s ease, transform .06s ease;
+  }
+  .packCard:hover{border-color:var(--accent)}
+  .packCard:active{transform:scale(.99)}
+  .packCard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .packCard .pname{font-weight:800;font-size:1.05rem}
+  .packCard .psize{color:var(--muted);font-size:.82rem;font-weight:500;font-family:'JetBrains Mono',monospace}
+  .packCard .pprog{font-family:'JetBrains Mono',monospace;font-size:.74rem;color:var(--muted);text-align:right;line-height:1.5}
+  .packCard .pprog b{color:var(--text)}
+  .packCard .pprog .star{color:var(--accent)}
+  .packCard .pprog .check{color:var(--good)}
+  .packCard.endless{border-style:dashed}
+
+  /* ---- level select ---- */
+  .levelHead{
+    width:100%;max-width:560px;
+    display:flex;align-items:baseline;justify-content:space-between;
+    margin:2px 0 12px;
+    font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--muted);
+  }
+  .levelHead .lt{font-family:'Outfit',sans-serif;font-weight:800;font-size:1.1rem;color:var(--text)}
+  .levelGrid{
+    display:grid;grid-template-columns:repeat(5,1fr);gap:8px;
+    width:100%;max-width:560px;
+  }
+  .lvlBtn{
+    aspect-ratio:1;flex:none;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    padding:0;border-radius:12px;
+  }
+  .lvlBtn .n{font-weight:800;font-size:1.02rem;line-height:1.1}
+  .lvlBtn .ic{font-size:.85rem;height:1em;line-height:1}
+  .lvlBtn .ic.star{color:var(--accent)}
+  .lvlBtn .ic.check{color:var(--good)}
+  .lvlBtn .bm{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted);height:.9em}
+
+  /* ---- game ---- */
+  .hud{
+    width:100%;max-width:560px;
+    display:flex;align-items:center;gap:8px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:8px 10px;
+    margin-bottom:12px;
+    font-family:'JetBrains Mono',monospace;font-size:.78rem;
+    flex-wrap:wrap;
+  }
+  .hud .stat{color:var(--muted)}
+  .hud .stat b{color:var(--text);font-weight:700}
+  .hud .stat .star{color:var(--accent)}
+  .hud .spacer{flex:1}
+  select{
+    background:var(--bg);color:var(--text);
+    border:1px solid var(--line);border-radius:8px;
+    font-family:'JetBrains Mono',monospace;font-size:.78rem;
+    padding:5px 6px;outline:none;
+  }
+  select:focus-visible{border-color:var(--accent)}
+
+  .board-wrap{width:100%;max-width:560px;position:relative}
+  canvas{
+    display:block;width:100%;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    touch-action:none;
+    cursor:pointer;
+  }
+
+  .controls{
+    width:100%;max-width:560px;
+    display:flex;gap:7px;margin-top:12px;
+  }
+  .controls button{font-size:.84rem;padding:11px 0}
+  button{
+    flex:1;
+    background:var(--panel);color:var(--text);
+    border:1px solid var(--line);border-radius:10px;
+    font-family:'Outfit',sans-serif;font-weight:700;font-size:.9rem;
+    padding:11px 0;cursor:pointer;
+    transition:border-color .12s ease, transform .06s ease;
+  }
+  button:hover{border-color:var(--muted)}
+  button:active{transform:scale(.985)}
+  button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  button.primary{background:var(--accent);color:#1a1405;border-color:var(--accent)}
+  button:disabled{opacity:.4;cursor:default}
+
+  .notice{
+    position:absolute;left:10px;right:10px;bottom:10px;
+    background:rgba(18,20,29,.92);
+    border:1px solid var(--accent);
+    border-radius:10px;
+    padding:9px 12px;
+    font-family:'JetBrains Mono',monospace;font-size:.74rem;
+    color:var(--text);text-align:center;
+    opacity:0;pointer-events:none;
+    transition:opacity .2s ease;
+  }
+  .notice b{color:var(--accent)}
+  .notice.show{opacity:1}
+
+  .overlay{
+    position:absolute;inset:0;
+    background:rgba(13,15,22,.78);
+    border-radius:16px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;
+    opacity:0;pointer-events:none;
+    transition:opacity .25s ease;
+  }
+  .overlay.show{opacity:1;pointer-events:auto}
+  .winCard{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:22px 26px 20px;
+    display:flex;flex-direction:column;align-items:center;gap:7px;
+    box-shadow:0 18px 50px rgba(0,0,0,.5);
+    max-width:88%;
+  }
+  .winCard .icon{font-size:2.2rem;line-height:1}
+  .winCard .icon.perfect{color:var(--accent)}
+  .winCard .icon.check{color:var(--good)}
+  .winCard .big{font-size:1.45rem;font-weight:800}
+  .winCard .big.perfect{color:var(--accent)}
+  .winCard .sub{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--muted);line-height:1.6}
+  .winCard .sub b{color:var(--text)}
+  .ovBtns{display:flex;gap:8px;margin-top:10px;width:100%}
+  .ovBtns button{flex:1;padding:11px 18px;white-space:nowrap}
+  @media (prefers-reduced-motion: reduce){
+    .overlay{transition:none}
+    .notice{transition:none}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="hleft">
+    <button class="iconBtn" id="backBtn" aria-label="Back">&#8249;</button>
+    <h1>infinite<span class="inf">&#8734;</span>flow</h1>
+  </div>
+  <div class="hright">
+    <button class="iconBtn" id="soundBtn" aria-label="Toggle sound">&#128266;</button>
+    <div class="streak" id="streak"></div>
+  </div>
+</header>
+
+<!-- ============ PACK MENU ============ -->
+<div class="menu" id="menuScreen">
+  <div class="tagline">every level is generated fresh and proven to have <b>exactly one solution</b></div>
+  <div id="packList"></div>
+</div>
+
+<!-- ============ LEVEL SELECT ============ -->
+<div id="levelScreen" style="display:none;width:100%;max-width:560px;flex-direction:column;align-items:center;">
+  <div class="levelHead">
+    <span class="lt" id="lsTitle"></span>
+    <span id="lsProg"></span>
+  </div>
+  <div class="levelGrid" id="levelGrid"></div>
+</div>
+
+<!-- ============ GAME ============ -->
+<div id="gameScreen" style="display:none;width:100%;max-width:560px;flex-direction:column;align-items:center;">
+  <div class="hud">
+    <select id="sizeSel" aria-label="Grid size">
+      <option value="5">5&#215;5</option>
+      <option value="6">6&#215;6</option>
+      <option value="7">7&#215;7</option>
+      <option value="8">8&#215;8</option>
+      <option value="9">9&#215;9</option>
+      <option value="10">10&#215;10</option>
+    </select>
+    <span class="stat" id="modeStat"></span>
+    <span class="stat">lvl <b id="lvl">1</b></span>
+    <span class="stat">moves <b id="moves">0</b></span>
+    <span class="stat" id="bestStat"></span>
+    <span class="spacer"></span>
+    <span class="stat" id="flowsStat"></span>
+  </div>
+
+  <div class="board-wrap">
+    <canvas id="board"></canvas>
+    <div class="notice" id="notice">all flows connected &#183; <b id="emptyN">0</b> cells still empty. stretch your pipes through them to finish</div>
+    <div class="overlay" id="overlay">
+      <div class="winCard">
+        <div class="icon" id="ovIcon"></div>
+        <div class="big" id="ovTitle">solved</div>
+        <div class="sub" id="ovSub"></div>
+        <div class="ovBtns" id="ovBtns">
+          <button id="replayBtn">replay</button>
+          <button class="primary" id="nextBtn">next level &#8250;</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="hintBtn">Hint</button>
+    <button id="restartBtn">Restart</button>
+    <button id="newBtn">Skip</button>
+    <button id="menuBtn">Menu</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- palette (classic flow colors) ---------- */
+const COLORS = [
+  "#ea3323","#39d05c","#3a6df0","#f0d23a","#f08c1d","#33d6e0",
+  "#e0418f","#9a2727","#8e3ae0","#f5f5f5","#9aa0ab","#a8e03a",
+  "#d6b88a","#2737a0","#1d8a8a","#f0a0c8"
+];
+
+/* ---------- seeded rng ---------- */
+function mulberry32(seed){
+  let a = seed >>> 0;
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* ---------- level generation (uniqueness verified) ---------- */
+function neighbors(cell, s){
+  const r = Math.floor(cell / s), c = cell % s, out = [];
+  if (r > 0) out.push(cell - s);
+  if (r < s - 1) out.push(cell + s);
+  if (c > 0) out.push(cell - 1);
+  if (c < s - 1) out.push(cell + 1);
+  return out;
+}
+
+function adjacent(a, b, s){
+  const r1 = Math.floor(a / s), c1 = a % s, r2 = Math.floor(b / s), c2 = b % s;
+  return Math.abs(r1 - r2) + Math.abs(c1 - c2) === 1;
+}
+
+const NBR_CACHE = {};
+function neighborTable(s){
+  if (NBR_CACHE[s]) return NBR_CACHE[s];
+  const n = s * s, nbr = [];
+  for (let cell = 0; cell < n; cell++) nbr.push(neighbors(cell, s));
+  NBR_CACHE[s] = nbr;
+  return nbr;
+}
+
+function serpentine(s){
+  const path = [];
+  for (let r = 0; r < s; r++){
+    if (r % 2 === 0) for (let c = 0; c < s; c++) path.push(r * s + c);
+    else for (let c = s - 1; c >= 0; c--) path.push(r * s + c);
+  }
+  return path;
+}
+
+function backbite(path, s, nbr, iters, rng){
+  for (let i = 0; i < iters; i++){
+    if (rng() < 0.5) path.reverse();
+    const head = path[0];
+    const opts = nbr[head].filter(x => x !== path[1]);
+    if (!opts.length) continue;
+    const pick = opts[(rng() * opts.length) | 0];
+    const j = path.indexOf(pick);
+    const prefix = path.slice(0, j).reverse();
+    path = prefix.concat(path.slice(j));
+  }
+  return path;
+}
+
+// Sample a partition of the Hamiltonian path into segments that never touch
+// themselves (no two non-consecutive cells adjacent), each length in [3, maxLen].
+// Self-touching segments can never give a unique level: cutting across the touch
+// is always a second valid way to connect that pair.
+function nstCut(path, s, nbr, rng, kTarget, maxLen){
+  const n = path.length;
+  const pos = new Int32Array(n);
+  for (let i = 0; i < n; i++) pos[path[i]] = i;
+
+  const maxEnd = new Int32Array(n);
+  let e = 0;
+  for (let i = 0; i < n; i++){
+    if (e < i) e = i;
+    for (;;){
+      if (e + 1 >= n) break;
+      const cand = path[e + 1];
+      let ok = true;
+      for (const m of nbr[cand]){
+        const p = pos[m];
+        if (p >= i && p <= e - 1){ ok = false; break; }
+      }
+      if (!ok) break;
+      e++;
+    }
+    maxEnd[i] = e;
+  }
+
+  const f = new Uint8Array(n + 1);
+  f[n] = 1;
+  for (let p = n - 1; p >= 0; p--){
+    const lim = Math.min(maxLen, maxEnd[p] - p + 1);
+    for (let L = 3; L <= lim; L++){
+      if (f[p + L]){ f[p] = 1; break; }
+    }
+  }
+  if (!f[0]) return null;
+
+  const mu = n / kTarget;
+  const sigma = Math.max(1.2, mu / 2);
+  const segs = [];
+  let p = 0;
+  while (p < n){
+    const lim = Math.min(maxLen, maxEnd[p] - p + 1);
+    const opts = [], ws = [];
+    let wsum = 0;
+    for (let L = 3; L <= lim; L++){
+      if (!f[p + L]) continue;
+      const w = Math.exp(-((L - mu) * (L - mu)) / (2 * sigma * sigma)) + 1e-6;
+      opts.push(L); ws.push(w); wsum += w;
+    }
+    let r = rng() * wsum, L = opts[opts.length - 1];
+    for (let i = 0; i < opts.length; i++){ r -= ws[i]; if (r <= 0){ L = opts[i]; break; } }
+    segs.push(path.slice(p, p + L));
+    p += L;
+  }
+  if (segs.length > COLORS.length || segs.length < 2) return null;
+  return segs;
+}
+
+/*
+Count ways to connect every endpoint pair with vertex-disjoint paths (endpoints
+block, empty cells allowed), restricted to non-self-touching paths. For a
+candidate that covers the whole board this restriction is sound: any
+self-touching solution shortcut-reduces to a distinct non-self-touching one,
+so "exactly 1 here" means exactly 1 overall. Stops at `limit` or `budget` nodes.
+*/
+function countSolutions(s, pairs, nbr, limit, budget){
+  const n = s * s;
+  const occ = new Int8Array(n).fill(-1);
+  const k = pairs.length;
+  for (let i = 0; i < k; i++){ occ[pairs[i][0]] = i; occ[pairs[i][1]] = i; }
+  let count = 0, nodes = 0, aborted = false;
+  const vis = new Int32Array(n); let visGen = 0;
+  const stack = new Int32Array(n);
+
+  function reach(from, goal){
+    visGen++;
+    let sp = 0;
+    stack[sp++] = from; vis[from] = visGen;
+    while (sp > 0){
+      const u = stack[--sp];
+      for (const c of nbr[u]){
+        if (c === goal) return true;
+        if (occ[c] === -1 && vis[c] !== visGen){ vis[c] = visGen; stack[sp++] = c; }
+      }
+    }
+    return false;
+  }
+
+  function rec(ci){
+    if (ci === k){ count++; return count >= limit; }
+    for (let j = ci; j < k; j++) if (!reach(pairs[j][0], pairs[j][1])) return false;
+    return grow(ci, pairs[ci][0], pairs[ci][1]);
+  }
+
+  function grow(ci, head, goal){
+    if (++nodes > budget){ aborted = true; return true; }
+    for (const c of nbr[head]){
+      if (c === goal){
+        let t = false;
+        for (const m of nbr[c]) if (occ[m] === ci && m !== head && m !== goal){ t = true; break; }
+        if (t) continue;
+        if (rec(ci + 1)) return true;
+        continue;
+      }
+      if (occ[c] !== -1) continue;
+      let t = false;
+      for (const m of nbr[c]) if (occ[m] === ci && m !== head && m !== goal){ t = true; break; }
+      if (t) continue;
+      occ[c] = ci;
+      if (reach(c, goal) && grow(ci, c, goal)){ occ[c] = -1; return true; }
+      occ[c] = -1;
+    }
+    return false;
+  }
+
+  rec(0);
+  return { count, aborted };
+}
+
+// Deterministic per seed. Yields to the UI every ~14ms.
+async function generateUniqueLevel(s, seed, kBase, maxLen){
+  const rng = mulberry32(seed);
+  const nbr = neighborTable(s);
+  let path = serpentine(s);
+  path = backbite(path, s, nbr, s * s * 40, rng);
+  let fallback = null;
+  let slice = Date.now();
+  for (let attempts = 1; attempts <= 20000; attempts++){
+    path = backbite(path, s, nbr, s * 4, rng);
+    const kT = Math.min(COLORS.length, kBase + ((rng() * 2) | 0));
+    const segs = nstCut(path, s, nbr, rng, kT, maxLen);
+    if (segs){
+      fallback = segs;
+      const pairs = segs.map(g => [g[0], g[g.length - 1]]);
+      const order = pairs.map((p, i) => i).sort((a, b) => segs[a].length - segs[b].length);
+      const res = countSolutions(s, order.map(i => pairs[i]), nbr, 2, 300000);
+      if (!res.aborted && res.count === 1) return segs;
+    }
+    if (Date.now() - slice > 14){
+      await new Promise(r => setTimeout(r, 0));
+      slice = Date.now();
+    }
+  }
+  return fallback; // practically unreachable safety net (still fully coverable)
+}
+
+/* ---------- packs + endless parameters ---------- */
+const PACKS = [
+  { id: "p5",  size: 5,  name: "starter pack", levels: 30 },
+  { id: "p6",  size: 6,  name: "classic pack", levels: 30 },
+  { id: "p7",  size: 7,  name: "sevens pack",  levels: 30 },
+  { id: "p8",  size: 8,  name: "eights pack",  levels: 30 },
+  { id: "p9",  size: 9,  name: "nines pack",   levels: 30 },
+  { id: "p10", size: 10, name: "jumbo pack",   levels: 30 }
+];
+
+// difficulty ramps inside each pack: flows get longer and fewer toward the end
+function packParams(pack, i){
+  const s = pack.size;
+  const t = pack.levels > 1 ? (i - 1) / (pack.levels - 1) : 0;
+  let kBase = Math.round(s + 2 - 3 * t);
+  if (s >= 9) kBase = Math.max(kBase, s + 1);
+  kBase = Math.max(4, kBase);
+  const maxLen = Math.max(6, Math.round((1.4 + 0.8 * t) * s));
+  return { size: s, seed: (1000 + s) * 1000000 + i * 104729, kBase, maxLen };
+}
+
+function endlessParams(s, lvl){
+  return {
+    size: s,
+    seed: s * 1000003 + lvl * 7919 + 12345,
+    kBase: s + (s >= 8 ? 1 : 0),
+    maxLen: Math.max(5, Math.round(1.5 * s))
+  };
+}
+
+/* ---------- state ---------- */
+let mode = "endless";      // "pack" | "endless"
+let currentPack = null;
+let S = 5;
+let level = 1;
+let segs = [];
+let endpointOf = new Map();
+let epPairs = [];
+let paths = [];
+let moves = 0;
+let lastMovedColor = -1;
+let hintUsed = false;
+let won = false;
+let prevSolved = 0;
+
+let drag = null;           // { color, done, undo: [], px, py, changed }
+
+let cachedSegs = null;
+let generating = false;
+let genToken = 0;
+
+let stats = { bySize: {}, packs: {}, sound: true };
+let storageOK = true;
+
+/* ---------- dom ---------- */
+const canvas = document.getElementById("board");
+const ctx = canvas.getContext("2d");
+const menuScreen = document.getElementById("menuScreen");
+const levelScreen = document.getElementById("levelScreen");
+const gameScreen = document.getElementById("gameScreen");
+const packList = document.getElementById("packList");
+const levelGrid = document.getElementById("levelGrid");
+const lsTitle = document.getElementById("lsTitle");
+const lsProg = document.getElementById("lsProg");
+const sizeSel = document.getElementById("sizeSel");
+const modeStat = document.getElementById("modeStat");
+const lvlEl = document.getElementById("lvl");
+const movesEl = document.getElementById("moves");
+const bestStat = document.getElementById("bestStat");
+const flowsEl = document.getElementById("flowsStat");
+const streakEl = document.getElementById("streak");
+const overlay = document.getElementById("overlay");
+const noticeEl = document.getElementById("notice");
+const emptyNEl = document.getElementById("emptyN");
+const ovIcon = document.getElementById("ovIcon");
+const ovTitle = document.getElementById("ovTitle");
+const ovSub = document.getElementById("ovSub");
+const ovBtns = document.getElementById("ovBtns");
+const nextBtn = document.getElementById("nextBtn");
+const replayBtn = document.getElementById("replayBtn");
+const backBtn = document.getElementById("backBtn");
+const soundBtn = document.getElementById("soundBtn");
+
+/* ---------- sounds (synthesized water, no assets) ---------- */
+let audioCtx = null;
+function ac(){
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+function soundOn(){ return stats.sound !== false; }
+
+function drop(delay, f0, f1, dur, vol){
+  if (!soundOn()) return;
+  try{
+    const c = ac(), t = c.currentTime + delay;
+    const o = c.createOscillator(); o.type = "sine";
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(f1, t + dur * 0.75);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(c.destination);
+    o.start(t); o.stop(t + dur + 0.05);
+  }catch(e){}
+}
+function splash(delay){
+  if (!soundOn()) return;
+  try{
+    const c = ac(), t = c.currentTime + delay;
+    const len = Math.floor(c.sampleRate * 0.5);
+    const buf = c.createBuffer(1, len, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.2);
+    const src = c.createBufferSource(); src.buffer = buf;
+    const f = c.createBiquadFilter(); f.type = "lowpass";
+    f.frequency.setValueAtTime(1400, t);
+    f.frequency.exponentialRampToValueAtTime(220, t + 0.45);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.14, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+    src.connect(f); f.connect(g); g.connect(c.destination);
+    src.start(t);
+  }catch(e){}
+}
+function playConnect(){
+  const p = 0.92 + Math.random() * 0.2;
+  drop(0, 300 * p, 980 * p, 0.16, 0.22);
+  drop(0.015, 180 * p, 430 * p, 0.10, 0.10);
+}
+function playWin(perfect){
+  const semis = perfect ? [0, 4, 7, 12, 16] : [0, 4, 7, 12];
+  const base = 320;
+  for (let i = 0; i < semis.length; i++){
+    const f = base * Math.pow(2, semis[i] / 12);
+    drop(0.06 + i * 0.085, f * 0.55, f * 1.9, 0.2, 0.17);
+  }
+  splash(0);
+}
+function updateSoundBtn(){
+  soundBtn.textContent = soundOn() ? "\uD83D\uDD0A" : "\uD83D\uDD07";
+}
+soundBtn.addEventListener("click", () => {
+  stats.sound = !soundOn();
+  updateSoundBtn();
+  saveStats();
+  if (soundOn()) playConnect();
+});
+document.addEventListener("pointerdown", function unlock(){
+  try{ ac(); }catch(e){}
+  document.removeEventListener("pointerdown", unlock);
+}, { once: true });
+
+/* ---------- storage ---------- */
+// inside Claude, window.storage persists progress; downloaded and run
+// standalone (e.g. on a phone), it falls back to the browser's localStorage
+const store = {
+  async get(key){
+    if (window.storage && window.storage.get) return window.storage.get(key);
+    try{
+      const v = localStorage.getItem(key);
+      return v === null ? null : { key, value: v };
+    }catch(e){ return null; }
+  },
+  async set(key, value){
+    if (window.storage && window.storage.set) return window.storage.set(key, value);
+    try{ localStorage.setItem(key, value); return { key, value }; }catch(e){ return null; }
+  }
+};
+
+async function loadStats(){
+  try{
+    const res = await store.get("flowfree:stats");
+    if (res && res.value){
+      stats = Object.assign(stats, JSON.parse(res.value));
+      if (!stats.bySize) stats.bySize = {};
+      if (!stats.packs) stats.packs = {};
+    }
+  }catch(e){ /* first run or storage unavailable */ }
+}
+async function saveStats(){
+  if (!storageOK) return;
+  try{
+    await store.set("flowfree:stats", JSON.stringify(stats));
+  }catch(e){ storageOK = false; }
+}
+function sizeStats(){
+  const key = String(S);
+  if (!stats.bySize[key]) stats.bySize[key] = { solved: 0, perfect: 0, level: 1 };
+  return stats.bySize[key];
+}
+function packStats(pid){
+  if (!stats.packs[pid]) stats.packs[pid] = { results: {} };
+  if (!stats.packs[pid].results) stats.packs[pid].results = {};
+  return stats.packs[pid];
+}
+function packSummary(pack){
+  const res = packStats(pack.id).results;
+  let stars = 0, checks = 0;
+  for (let i = 1; i <= pack.levels; i++){
+    const r = res[String(i)];
+    if (!r) continue;
+    if (r.star) stars++; else checks++;
+  }
+  return { stars, checks, done: stars + checks };
+}
+
+/* ---------- level lifecycle ---------- */
+function buildBoard(newSegs){
+  segs = newSegs;
+  endpointOf = new Map();
+  epPairs = [];
+  paths = [];
+  for (let c = 0; c < segs.length; c++){
+    const seg = segs[c];
+    const a = seg[0], b = seg[seg.length - 1];
+    endpointOf.set(a, c);
+    endpointOf.set(b, c);
+    epPairs.push([a, b]);
+    paths.push([]);
+  }
+  moves = 0;
+  lastMovedColor = -1;
+  hintUsed = false;
+  won = false;
+  drag = null;
+  prevSolved = 0;
+  overlay.classList.remove("show");
+  ovBtns.style.display = "";
+  updateHud();
+  draw();
+}
+
+function currentParams(){
+  return mode === "pack" ? packParams(currentPack, level) : endlessParams(S, level);
+}
+
+async function startLevel(){
+  const tok = ++genToken;
+  generating = true;
+  won = false;
+  drag = null;
+  segs = []; paths = []; epPairs = []; endpointOf = new Map();
+  const params = currentParams();
+  S = params.size;
+  updateHud();
+  draw();
+  ovIcon.textContent = "\u221E";
+  ovIcon.className = "icon perfect";
+  ovTitle.textContent = `weaving level ${level}\u2026`;
+  ovTitle.className = "big";
+  ovSub.textContent = "verifying it has exactly one solution";
+  ovBtns.style.display = "none";
+  overlay.classList.add("show");
+  const newSegs = await generateUniqueLevel(params.size, params.seed, params.kBase, params.maxLen);
+  if (tok !== genToken) return;
+  cachedSegs = newSegs;
+  generating = false;
+  buildBoard(newSegs);
+}
+
+function colorSolved(c){
+  const p = paths[c];
+  if (p.length < 2) return false;
+  const [a, b] = epPairs[c];
+  const f = p[0], l = p[p.length - 1];
+  return (f === a && l === b) || (f === b && l === a);
+}
+
+function solvedFlowCount(){
+  let n = 0;
+  for (let c = 0; c < segs.length; c++) if (colorSolved(c)) n++;
+  return n;
+}
+
+function filledCount(){
+  let n = 0;
+  for (const p of paths) n += p.length;
+  return n;
+}
+
+function levelRecord(){
+  if (mode !== "pack") return null;
+  return packStats(currentPack.id).results[String(level)] || null;
+}
+
+function checkWin(){
+  if (won || generating) return;
+  if (!segs.length) return;
+  for (let c = 0; c < segs.length; c++) if (!colorSolved(c)) return;
+  if (filledCount() !== S * S) return;
+  won = true;
+  drag = null;
+  const perfect = (moves === segs.length) && !hintUsed;
+  let newBest = false;
+  if (mode === "pack"){
+    const ps = packStats(currentPack.id);
+    const key = String(level);
+    const rec = ps.results[key] || { m: Infinity, star: false };
+    newBest = moves < rec.m;
+    rec.m = Math.min(rec.m, moves);
+    rec.star = rec.star || perfect;
+    ps.results[key] = rec;
+  } else {
+    const st = sizeStats();
+    st.solved++;
+    if (perfect) st.perfect++;
+    st.level = level + 1;
+  }
+  saveStats();
+  playWin(perfect);
+  ovIcon.textContent = perfect ? "\u2605" : "\u2713";
+  ovIcon.className = "icon " + (perfect ? "perfect" : "check");
+  ovTitle.textContent = perfect ? "perfect!" : "level complete!";
+  ovTitle.className = "big" + (perfect ? " perfect" : "");
+  let flavor;
+  if (perfect) flavor = "minimum moves, no breaks. flawless.";
+  else if (hintUsed) flavor = "hint used. replay for the star";
+  else flavor = `replay it in ${segs.length} moves for the star`;
+  if (newBest && !perfect) flavor = "new best! " + flavor;
+  ovSub.innerHTML = `you finished level ${level} in <b>${moves}</b> moves<br>${flavor}`;
+  if (mode === "pack" && level >= currentPack.levels){
+    nextBtn.innerHTML = "level select \u203A";
+  } else {
+    nextBtn.innerHTML = "next level \u203A";
+  }
+  ovBtns.style.display = "";
+  setTimeout(() => overlay.classList.add("show"), 420);
+  updateHud();
+  draw();
+}
+
+function updateHud(){
+  movesEl.textContent = moves;
+  if (mode === "pack"){
+    modeStat.textContent = `${S}\u00D7${S}`;
+    lvlEl.textContent = `${level}/${currentPack.levels}`;
+    const rec = levelRecord();
+    bestStat.innerHTML = rec ? `best <b>${rec.m}</b>${rec.star ? ' <span class="star">\u2605</span>' : ""}` : "";
+    const sum = packSummary(currentPack);
+    streakEl.innerHTML = `${currentPack.name} \u00B7 <span class="star">\u2605</span> <b>${sum.stars}</b> \u00B7 <b>${sum.done}</b>/${currentPack.levels}`;
+  } else {
+    modeStat.textContent = "";
+    lvlEl.textContent = level;
+    bestStat.innerHTML = "";
+    const st = sizeStats();
+    streakEl.innerHTML = `<b>${st.solved}</b> solved \u00B7 <span class="star">\u2605</span> <b>${st.perfect}</b> perfect`;
+  }
+  const solvedFlows = solvedFlowCount();
+  const filled = filledCount();
+  flowsEl.textContent = segs.length ? `flows ${solvedFlows}/${segs.length} \u00B7 cells ${filled}/${S * S}` : "";
+  const allConnected = segs.length > 0 && solvedFlows === segs.length;
+  if (allConnected && filled < S * S && !won){
+    emptyNEl.textContent = S * S - filled;
+    noticeEl.classList.add("show");
+  } else {
+    noticeEl.classList.remove("show");
+  }
+}
+
+function boardChanged(){
+  const sc = solvedFlowCount();
+  if (sc > prevSolved && !won) playConnect();
+  prevSolved = sc;
+  updateHud();
+  draw();
+  checkWin();
+}
+
+/* ---------- input: trajectory-traced controls ---------- */
+// walk the exact line the pointer travelled, cell by cell (4-connected),
+// so fast and diagonal swipes never lose tracking
+function cellsAlong(x0, y0, x1, y1){
+  const cells = [];
+  let cx = Math.floor(x0), cy = Math.floor(y0);
+  const ex = Math.floor(x1), ey = Math.floor(y1);
+  if (cx === ex && cy === ey) return cells;
+  const dx = x1 - x0, dy = y1 - y0;
+  const stepX = dx > 0 ? 1 : -1, stepY = dy > 0 ? 1 : -1;
+  let tMaxX = dx !== 0 ? ((stepX > 0 ? (cx + 1 - x0) : (x0 - cx)) / Math.abs(dx)) : Infinity;
+  let tMaxY = dy !== 0 ? ((stepY > 0 ? (cy + 1 - y0) : (y0 - cy)) / Math.abs(dy)) : Infinity;
+  const tDeltaX = dx !== 0 ? 1 / Math.abs(dx) : Infinity;
+  const tDeltaY = dy !== 0 ? 1 / Math.abs(dy) : Infinity;
+  let guard = 0;
+  while ((cx !== ex || cy !== ey) && guard++ < 8 * S){
+    if (tMaxX < tMaxY){ cx += stepX; tMaxX += tDeltaX; }
+    else { cy += stepY; tMaxY += tDeltaY; }
+    if (cx < 0 || cy < 0 || cx >= S || cy >= S) break;
+    cells.push(cy * S + cx);
+  }
+  return cells;
+}
+
+function pointerPos(e){
+  const rect = canvas.getBoundingClientRect();
+  let nx = (e.clientX - rect.left) / rect.width * S;
+  let ny = (e.clientY - rect.top) / rect.height * S;
+  nx = Math.min(S - 1e-4, Math.max(1e-4, nx));
+  ny = Math.min(S - 1e-4, Math.max(1e-4, ny));
+  return { x: nx, y: ny };
+}
+
+function findInPaths(cell){
+  for (let c = 0; c < paths.length; c++){
+    const i = paths[c].indexOf(cell);
+    if (i >= 0) return { c, i };
+  }
+  return null;
+}
+
+function countMove(color){
+  if (color !== lastMovedColor){
+    moves++;
+    lastMovedColor = color;
+  }
+}
+
+// one cell of finger travel. returns false to stop processing this event.
+function processStep(t){
+  const p = paths[drag.color];
+  const head = p[p.length - 1];
+  if (t === head) return true;
+
+  const own = p.indexOf(t);
+  if (own >= 0){
+    // backing onto our own pipe: shrink it, and heal any pipes the
+    // abandoned steps had broken (finger still down = breaks are undone)
+    const newLen = own + 1;
+    paths[drag.color] = p.slice(0, newLen);
+    while (drag.undo.length && drag.undo[drag.undo.length - 1].len > newLen){
+      const u = drag.undo.pop();
+      for (let q = u.cuts.length - 1; q >= 0; q--){
+        const cut = u.cuts[q];
+        paths[cut.color] = paths[cut.color].concat(cut.cells);
+      }
+    }
+    drag.changed = true;
+    return true;
+  }
+
+  // pipe can only grow into cells adjacent to its head; if the finger
+  // wanders while the pipe is blocked, the pipe waits where it is
+  if (!adjacent(head, t, S)) return true;
+
+  if (endpointOf.has(t)){
+    const epc = endpointOf.get(t);
+    if (epc === drag.color){
+      paths[drag.color].push(t);
+      drag.undo.push({ len: paths[drag.color].length, cuts: [] });
+      drag.done = true;
+      drag.changed = true;
+      return false;
+    }
+    return true; // another color's endpoint blocks this cell
+  }
+
+  const cuts = [];
+  const hit = findInPaths(t);
+  if (hit){
+    cuts.push({ color: hit.c, cells: paths[hit.c].slice(hit.i) });
+    paths[hit.c] = paths[hit.c].slice(0, hit.i);
+  }
+  paths[drag.color].push(t);
+  drag.undo.push({ len: paths[drag.color].length, cuts });
+  drag.changed = true;
+  return true;
+}
+
+canvas.addEventListener("pointerdown", (e) => {
+  if (won || generating) return;
+  e.preventDefault();
+  canvas.setPointerCapture(e.pointerId);
+  const pos = pointerPos(e);
+  const cell = Math.floor(pos.y) * S + Math.floor(pos.x);
+
+  if (endpointOf.has(cell)){
+    const c = endpointOf.get(cell);
+    paths[c] = [cell];
+    drag = { color: c, done: false, undo: [], px: pos.x, py: pos.y, changed: false };
+    countMove(c);
+  } else {
+    const hit = findInPaths(cell);
+    if (hit){
+      paths[hit.c] = paths[hit.c].slice(0, hit.i + 1);
+      drag = { color: hit.c, done: false, undo: [], px: pos.x, py: pos.y, changed: false };
+      countMove(hit.c);
+    } else {
+      return;
+    }
+  }
+  boardChanged();
+});
+
+canvas.addEventListener("pointermove", (e) => {
+  if (!drag || drag.done || won || generating) return;
+  e.preventDefault();
+  const pos = pointerPos(e);
+  drag.changed = false;
+  const cells = cellsAlong(drag.px, drag.py, pos.x, pos.y);
+  drag.px = pos.x;
+  drag.py = pos.y;
+  for (const t of cells){
+    if (!processStep(t)) break;
+  }
+  if (drag.changed) boardChanged();
+});
+
+function endDrag(){
+  if (drag){ drag = null; boardChanged(); }
+}
+canvas.addEventListener("pointerup", endDrag);
+canvas.addEventListener("pointercancel", endDrag);
+canvas.addEventListener("contextmenu", e => e.preventDefault());
+
+/* ---------- hint ---------- */
+document.getElementById("hintBtn").addEventListener("click", () => {
+  if (won || generating || !segs.length) return;
+  const unsolved = [];
+  for (let c = 0; c < segs.length; c++) if (!colorSolved(c)) unsolved.push(c);
+  if (!unsolved.length) return;
+  const c = unsolved[(Math.random() * unsolved.length) | 0];
+  const seg = segs[c].slice();
+  const segSet = new Set(seg);
+  for (let o = 0; o < paths.length; o++){
+    if (o === c) continue;
+    const idx = paths[o].findIndex(cell => segSet.has(cell));
+    if (idx >= 0) paths[o] = paths[o].slice(0, idx);
+  }
+  paths[c] = seg;
+  hintUsed = true;
+  boardChanged();
+});
+
+/* ---------- buttons + navigation ---------- */
+document.getElementById("restartBtn").addEventListener("click", () => {
+  if (generating || !cachedSegs) return;
+  buildBoard(cachedSegs);
+});
+replayBtn.addEventListener("click", () => {
+  if (generating || !cachedSegs) return;
+  buildBoard(cachedSegs);
+});
+document.getElementById("newBtn").addEventListener("click", advanceLevel);
+nextBtn.addEventListener("click", advanceLevel);
+function advanceLevel(){
+  if (generating) return;
+  if (mode === "pack"){
+    if (level >= currentPack.levels){ showLevels(currentPack); return; }
+    level++;
+  } else {
+    level++;
+    sizeStats().level = level;
+    saveStats();
+  }
+  startLevel();
+}
+
+sizeSel.addEventListener("change", () => {
+  S = parseInt(sizeSel.value, 10);
+  stats.lastSize = S;
+  level = sizeStats().level || 1;
+  saveStats();
+  resizeCanvas();
+  startLevel();
+});
+
+function hideAllScreens(){
+  menuScreen.style.display = "none";
+  levelScreen.style.display = "none";
+  gameScreen.style.display = "none";
+}
+
+function showMenu(){
+  genToken++;
+  generating = false;
+  hideAllScreens();
+  menuScreen.style.display = "flex";
+  backBtn.style.display = "none";
+  streakEl.innerHTML = "";
+  renderPackList();
+}
+
+function renderPackList(){
+  packList.innerHTML = "";
+  for (const pack of PACKS){
+    const sum = packSummary(pack);
+    const btn = document.createElement("button");
+    btn.className = "packCard";
+    btn.style.width = "100%";
+    btn.style.marginBottom = "10px";
+    btn.innerHTML =
+      `<span><span class="pname">${pack.name}</span><br><span class="psize">${pack.size}\u00D7${pack.size} \u00B7 ${pack.levels} levels</span></span>` +
+      `<span class="pprog"><span class="star">\u2605</span> <b>${sum.stars}</b> \u00B7 <span class="check">\u2713</span> <b>${sum.checks}</b><br><b>${sum.done}</b>/${pack.levels} done</span>`;
+    btn.addEventListener("click", () => showLevels(pack));
+    packList.appendChild(btn);
+  }
+  const endless = document.createElement("button");
+  endless.className = "packCard endless";
+  endless.style.width = "100%";
+  const ls = stats.lastSize || 5;
+  endless.innerHTML =
+    `<span><span class="pname">endless</span><br><span class="psize">pick a size \u00B7 infinite levels</span></span>` +
+    `<span class="pprog">last played ${ls}\u00D7${ls}</span>`;
+  endless.addEventListener("click", openEndless);
+  packList.appendChild(endless);
+}
+
+function showLevels(pack){
+  genToken++;
+  generating = false;
+  currentPack = pack;
+  hideAllScreens();
+  levelScreen.style.display = "flex";
+  backBtn.style.display = "";
+  streakEl.innerHTML = "";
+  lsTitle.textContent = pack.name;
+  const sum = packSummary(pack);
+  lsProg.innerHTML = `${pack.size}\u00D7${pack.size} \u00B7 <span style="color:var(--accent)">\u2605</span> ${sum.stars} \u00B7 ${sum.done}/${pack.levels}`;
+  levelGrid.innerHTML = "";
+  const res = packStats(pack.id).results;
+  for (let i = 1; i <= pack.levels; i++){
+    const r = res[String(i)];
+    const btn = document.createElement("button");
+    btn.className = "lvlBtn";
+    const icon = r ? (r.star ? '<span class="ic star">\u2605</span>' : '<span class="ic check">\u2713</span>') : '<span class="ic"></span>';
+    const best = r ? `<span class="bm">${r.m}</span>` : '<span class="bm"></span>';
+    btn.innerHTML = `<span class="n">${i}</span>${icon}${best}`;
+    btn.setAttribute("aria-label", `level ${i}` + (r ? (r.star ? ", starred" : ", completed") : ""));
+    btn.addEventListener("click", () => openPackLevel(pack, i));
+    levelGrid.appendChild(btn);
+  }
+}
+
+function openPackLevel(pack, i){
+  mode = "pack";
+  currentPack = pack;
+  level = i;
+  S = pack.size;
+  hideAllScreens();
+  gameScreen.style.display = "flex";
+  backBtn.style.display = "";
+  sizeSel.style.display = "none";
+  resizeCanvas();
+  startLevel();
+}
+
+function openEndless(){
+  mode = "endless";
+  hideAllScreens();
+  gameScreen.style.display = "flex";
+  backBtn.style.display = "";
+  sizeSel.style.display = "";
+  sizeSel.value = String(S);
+  level = sizeStats().level || 1;
+  resizeCanvas();
+  startLevel();
+}
+
+document.getElementById("menuBtn").addEventListener("click", showMenu);
+document.querySelector("h1").addEventListener("click", showMenu);
+
+backBtn.addEventListener("click", () => {
+  if (gameScreen.style.display !== "none"){
+    if (mode === "pack") showLevels(currentPack);
+    else showMenu();
+  } else {
+    showMenu();
+  }
+});
+
+/* ---------- rendering ---------- */
+function resizeCanvas(){
+  const w = canvas.clientWidth;
+  if (!w) return;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.style.height = w + "px";
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(w * dpr);
+  draw();
+}
+
+function hexA(hex, a){
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function draw(){
+  const W = canvas.width;
+  ctx.clearRect(0, 0, W, W);
+  if (!segs.length) return;
+  const cs = W / S;
+
+  ctx.strokeStyle = "#262c3d";
+  ctx.lineWidth = Math.max(1, W / 600);
+  ctx.beginPath();
+  for (let i = 1; i < S; i++){
+    ctx.moveTo(i * cs, 0); ctx.lineTo(i * cs, W);
+    ctx.moveTo(0, i * cs); ctx.lineTo(W, i * cs);
+  }
+  ctx.stroke();
+
+  const cx = cell => (cell % S) * cs + cs / 2;
+  const cy = cell => Math.floor(cell / S) * cs + cs / 2;
+
+  for (let c = 0; c < paths.length; c++){
+    ctx.fillStyle = hexA(COLORS[c], 0.14);
+    for (const cell of paths[c]){
+      ctx.fillRect((cell % S) * cs, Math.floor(cell / S) * cs, cs, cs);
+    }
+  }
+
+  for (let c = 0; c < paths.length; c++){
+    const p = paths[c];
+    if (p.length < 2) continue;
+    const solved = colorSolved(c);
+    ctx.save();
+    if (solved){
+      ctx.shadowColor = COLORS[c];
+      ctx.shadowBlur = cs * 0.35;
+    }
+    ctx.strokeStyle = COLORS[c];
+    ctx.lineWidth = cs * 0.34;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(cx(p[0]), cy(p[0]));
+    for (let i = 1; i < p.length; i++) ctx.lineTo(cx(p[i]), cy(p[i]));
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  for (let c = 0; c < epPairs.length; c++){
+    const solved = colorSolved(c);
+    for (const cell of epPairs[c]){
+      ctx.save();
+      if (solved){
+        ctx.shadowColor = COLORS[c];
+        ctx.shadowBlur = cs * 0.4;
+      }
+      ctx.fillStyle = COLORS[c];
+      ctx.beginPath();
+      ctx.arc(cx(cell), cy(cell), cs * 0.30, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  let allConnected = segs.length > 0;
+  for (let c = 0; c < segs.length; c++) if (!colorSolved(c)){ allConnected = false; break; }
+  if (allConnected && !won){
+    const occ = new Set();
+    for (const p of paths) for (const cell of p) occ.add(cell);
+    ctx.fillStyle = "rgba(255,194,75,.6)";
+    for (let cell = 0; cell < S * S; cell++){
+      if (!occ.has(cell)){
+        ctx.beginPath();
+        ctx.arc(cx(cell), cy(cell), cs * 0.08, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+}
+
+window.addEventListener("resize", resizeCanvas);
+
+/* ---------- init ---------- */
+// web-app manifest (built at runtime to keep this a single file):
+// lets phones install it from Add to Home Screen as a standalone app
+function installManifest(){
+  try{
+    const icon = "data:image/svg+xml," + encodeURIComponent(
+      "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>" +
+      "<rect width='100' height='100' rx='22' fill='#12141d'/>" +
+      "<text x='50' y='68' font-size='50' text-anchor='middle' fill='#ffc24b' font-family='Arial,sans-serif' font-weight='bold'>\u221E</text>" +
+      "</svg>"
+    );
+    const manifest = {
+      name: "Infinite Flow",
+      short_name: "Flow",
+      display: "standalone",
+      orientation: "portrait",
+      background_color: "#12141d",
+      theme_color: "#12141d",
+      icons: [{ src: icon, sizes: "any", type: "image/svg+xml" }]
+    };
+    const link = document.createElement("link");
+    link.rel = "manifest";
+    link.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: "application/json" }));
+    document.head.appendChild(link);
+  }catch(e){}
+}
+
+(async function init(){
+  installManifest();
+  await loadStats();
+  if (stats.lastSize && [5,6,7,8,9,10].includes(stats.lastSize)){
+    S = stats.lastSize;
+  }
+  updateSoundBtn();
+  showMenu();
+})();
+</script>
+</body>
+</html>
