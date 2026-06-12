@@ -503,18 +503,38 @@ const PACKS = [
   { id: "p10", size: 10, name: "jumbo pack",   levels: 30 }
 ];
 
-// difficulty ramps inside each pack: flows get longer and fewer toward the end
-function packParams(pack, i){
-  const s = pack.size;
-  const t = pack.levels > 1 ? (i - 1) / (pack.levels - 1) : 0;
+// shared difficulty ramp: t in [0,1], harder means longer and fewer flows
+function rampParams(s, t){
   let kBase = Math.round(s + 2 - 3 * t);
   if (s >= 9) kBase = Math.max(kBase, s + 1);
   kBase = Math.max(4, kBase);
   const maxLen = Math.max(6, Math.round((1.4 + 0.8 * t) * s));
-  return { size: s, seed: (1000 + s) * 1000000 + i * 104729, kBase, maxLen };
+  return { kBase, maxLen };
 }
 
-function endlessParams(s, lvl){
+// difficulty ramps inside each pack: flows get longer and fewer toward the end
+function packParams(pack, i){
+  const s = pack.size;
+  const t = pack.levels > 1 ? (i - 1) / (pack.levels - 1) : 0;
+  const r = rampParams(s, t);
+  return { size: s, seed: (1000 + s) * 1000000 + i * 104729, kBase: r.kBase, maxLen: r.maxLen };
+}
+
+// endless: starts at 5x5, board grows every 10 levels (5x5 to 10x10 at lvl 51),
+// difficulty ramps inside each band and keeps climbing forever at 10x10
+function endlessModeParams(n){
+  const idx = Math.floor((n - 1) / 10);
+  const size = Math.min(10, 5 + idx);
+  let t;
+  if (size < 10) t = ((n - 1) % 10) / 9;
+  else t = Math.min(1, (n - 51) / 9);
+  const r = rampParams(size, t);
+  if (size === 10 && n > 60) r.kBase = 11 + (n % 2);
+  return { size, seed: 555000000 + n * 92821, kBase: r.kBase, maxLen: r.maxLen };
+}
+
+// sandbox: pick a size, play it forever
+function sandboxParams(s, lvl){
   return {
     size: s,
     seed: s * 1000003 + lvl * 7919 + 12345,
@@ -524,7 +544,7 @@ function endlessParams(s, lvl){
 }
 
 /* ---------- state ---------- */
-let mode = "endless";      // "pack" | "endless"
+let mode = "sandbox";      // "pack" | "endless" | "sandbox"
 let currentPack = null;
 let S = 5;
 let level = 1;
@@ -544,7 +564,7 @@ let cachedSegs = null;
 let generating = false;
 let genToken = 0;
 
-let stats = { bySize: {}, packs: {}, sound: true };
+let stats = { bySize: {}, packs: {}, endless: { level: 1, solved: 0, perfect: 0 }, sound: true };
 let storageOK = true;
 
 /* ---------- dom ---------- */
@@ -640,12 +660,45 @@ soundBtn.addEventListener("click", () => {
   stats.sound = !soundOn();
   updateSoundBtn();
   saveStats();
-  if (soundOn()) playConnect();
+  if (soundOn()){ ensureAudio(); playConnect(); }
 });
-document.addEventListener("pointerdown", function unlock(){
-  try{ ac(); }catch(e){}
-  document.removeEventListener("pointerdown", unlock);
-}, { once: true });
+
+// Mobile audio unlock. Phones suspend audio contexts until a user gesture,
+// and iPhones additionally mute Web Audio under the ringer silent switch
+// unless a real media element is playing. So on taps we: resume the context,
+// fire the canonical silent-buffer unlock once, and keep a silent looping
+// <audio> element alive, which moves iOS into playback mode (mute-switch proof).
+const SILENT_WAV = "data:audio/wav;base64,UklGRkQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YSAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==";
+let silentEl = null;
+let bufferUnlocked = false;
+function ensureAudio(){
+  try{
+    const c = ac();
+    if (c.state !== "running") c.resume();
+    if (!bufferUnlocked){
+      const b = c.createBuffer(1, 1, 22050);
+      const src = c.createBufferSource();
+      src.buffer = b;
+      src.connect(c.destination);
+      src.start(0);
+      bufferUnlocked = true;
+    }
+    if (!silentEl){
+      silentEl = new Audio(SILENT_WAV);
+      silentEl.loop = true;
+      silentEl.volume = 0.01;
+      silentEl.setAttribute("playsinline", "");
+    }
+    if (silentEl.paused) silentEl.play().catch(() => {});
+  }catch(e){}
+}
+document.addEventListener("pointerdown", ensureAudio, { capture: true });
+document.addEventListener("touchend", ensureAudio, { capture: true });
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && audioCtx && audioCtx.state !== "running"){
+    try{ audioCtx.resume(); }catch(e){}
+  }
+});
 
 /* ---------- storage ---------- */
 // inside Claude, window.storage persists progress; downloaded and run
@@ -671,6 +724,7 @@ async function loadStats(){
       stats = Object.assign(stats, JSON.parse(res.value));
       if (!stats.bySize) stats.bySize = {};
       if (!stats.packs) stats.packs = {};
+      if (!stats.endless) stats.endless = { level: 1, solved: 0, perfect: 0 };
     }
   }catch(e){ /* first run or storage unavailable */ }
 }
@@ -684,6 +738,10 @@ function sizeStats(){
   const key = String(S);
   if (!stats.bySize[key]) stats.bySize[key] = { solved: 0, perfect: 0, level: 1 };
   return stats.bySize[key];
+}
+function endlessStats(){
+  if (!stats.endless) stats.endless = { level: 1, solved: 0, perfect: 0 };
+  return stats.endless;
 }
 function packStats(pid){
   if (!stats.packs[pid]) stats.packs[pid] = { results: {} };
@@ -728,7 +786,9 @@ function buildBoard(newSegs){
 }
 
 function currentParams(){
-  return mode === "pack" ? packParams(currentPack, level) : endlessParams(S, level);
+  if (mode === "pack") return packParams(currentPack, level);
+  if (mode === "endless") return endlessModeParams(level);
+  return sandboxParams(S, level);
 }
 
 async function startLevel(){
@@ -797,6 +857,11 @@ function checkWin(){
     rec.m = Math.min(rec.m, moves);
     rec.star = rec.star || perfect;
     ps.results[key] = rec;
+  } else if (mode === "endless"){
+    const st = endlessStats();
+    st.solved++;
+    if (perfect) st.perfect++;
+    st.level = level + 1;
   } else {
     const st = sizeStats();
     st.solved++;
@@ -835,6 +900,12 @@ function updateHud(){
     bestStat.innerHTML = rec ? `best <b>${rec.m}</b>${rec.star ? ' <span class="star">\u2605</span>' : ""}` : "";
     const sum = packSummary(currentPack);
     streakEl.innerHTML = `${currentPack.name} \u00B7 <span class="star">\u2605</span> <b>${sum.stars}</b> \u00B7 <b>${sum.done}</b>/${currentPack.levels}`;
+  } else if (mode === "endless"){
+    modeStat.textContent = `${S}\u00D7${S}`;
+    lvlEl.textContent = level;
+    bestStat.innerHTML = "";
+    const st = endlessStats();
+    streakEl.innerHTML = `endless \u00B7 <b>${st.solved}</b> solved \u00B7 <span class="star">\u2605</span> <b>${st.perfect}</b>`;
   } else {
     modeStat.textContent = "";
     lvlEl.textContent = level;
@@ -1043,6 +1114,10 @@ function advanceLevel(){
   if (mode === "pack"){
     if (level >= currentPack.levels){ showLevels(currentPack); return; }
     level++;
+  } else if (mode === "endless"){
+    level++;
+    endlessStats().level = level;
+    saveStats();
   } else {
     level++;
     sizeStats().level = level;
@@ -1091,14 +1166,25 @@ function renderPackList(){
     packList.appendChild(btn);
   }
   const endless = document.createElement("button");
-  endless.className = "packCard endless";
+  endless.className = "packCard";
   endless.style.width = "100%";
-  const ls = stats.lastSize || 5;
+  endless.style.marginBottom = "10px";
+  const es = endlessStats();
   endless.innerHTML =
-    `<span><span class="pname">endless</span><br><span class="psize">pick a size \u00B7 infinite levels</span></span>` +
-    `<span class="pprog">last played ${ls}\u00D7${ls}</span>`;
+    `<span><span class="pname">endless</span><br><span class="psize">starts 5\u00D75 \u00B7 grows every 10 levels \u00B7 never stops</span></span>` +
+    `<span class="pprog">lvl <b>${es.level}</b><br><span class="star">\u2605</span> <b>${es.perfect}</b> perfect</span>`;
   endless.addEventListener("click", openEndless);
   packList.appendChild(endless);
+
+  const sandbox = document.createElement("button");
+  sandbox.className = "packCard endless";
+  sandbox.style.width = "100%";
+  const ls = stats.lastSize || 5;
+  sandbox.innerHTML =
+    `<span><span class="pname">sandbox</span><br><span class="psize">pick a size \u00B7 infinite levels</span></span>` +
+    `<span class="pprog">last played ${ls}\u00D7${ls}</span>`;
+  sandbox.addEventListener("click", openSandbox);
+  packList.appendChild(sandbox);
 }
 
 function showLevels(pack){
@@ -1142,6 +1228,17 @@ function openPackLevel(pack, i){
 
 function openEndless(){
   mode = "endless";
+  hideAllScreens();
+  gameScreen.style.display = "flex";
+  backBtn.style.display = "";
+  sizeSel.style.display = "none";
+  level = endlessStats().level || 1;
+  resizeCanvas();
+  startLevel();
+}
+
+function openSandbox(){
+  mode = "sandbox";
   hideAllScreens();
   gameScreen.style.display = "flex";
   backBtn.style.display = "";
